@@ -128,6 +128,47 @@ int euristic_weight(const Node& current, const Node& end)
     return current.weight + abs(current.x - end.x) + abs(current.y - end.y);
 }
 
+
+std::vector<std::size_t> find_path_AStar(Graph& graph)
+{
+    graph.visited_counter = 0;
+    graph.init_start_values();
+    std::multimap<int, std::size_t> min_weight_map;
+    graph.nodes[graph.start_index].weight = 0;
+    min_weight_map.insert({ 0, graph.start_index });
+    while (!min_weight_map.empty())
+    {
+        auto [current_key, current_index] = *(min_weight_map.begin());
+        int current_weight = graph.nodes[current_index].weight;
+        min_weight_map.erase(min_weight_map.begin());
+        if (graph.nodes[current_index].visited)
+        {
+            continue;
+        }
+        graph.nodes[current_index].visited = true;
+        graph.visited_counter++;
+        if (current_index == graph.end_index)
+        {
+            break;
+        }
+        for (std::size_t i = 0; i < graph.nodes[current_index].edges.size(); i++)
+        {
+            std::size_t index_to = graph.nodes[current_index].edges[i].index_to;
+            int edged_weight = graph.nodes[current_index].edges[i].weight;
+            if (!graph.nodes[index_to].visited)
+            {
+                if (current_weight + edged_weight < graph.nodes[index_to].weight)
+                {
+                    graph.nodes[index_to].weight = current_weight + edged_weight;
+                    graph.nodes[index_to].prev_index = current_index;
+                    min_weight_map.insert({ euristic_weight(graph.nodes[index_to],graph.nodes[graph.end_index]),index_to });
+                }
+            }
+        }
+    }
+    return convert_graph_to_path(graph);
+}
+
 Graph read_from_image(const TCHAR* filename)
 {
     Graph result;
@@ -254,6 +295,10 @@ void draw_path_to_image(const Graph& graph, const std::vector<std::size_t>& path
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    auto image_graph = read_from_image(TEXT("input.bmp"));
+    auto path = find_path_AStar(image_graph);
+    draw_path_to_image(image_graph, path, TEXT("input.bmp"), TEXT("output.bmp"));
+    std::cout << "Nodes visited: " << image_graph.visited_counter << std::endl;
+    std::cout << std::endl;
 }
 
